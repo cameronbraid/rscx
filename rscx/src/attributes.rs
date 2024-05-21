@@ -19,9 +19,18 @@ impl EscapeAttribute for str {
 }
 
 impl EscapeAttribute for String {
-    fn escape_attribute(&self) -> Cow<str> {
-        encode_unquoted_attribute(self)
-    }
+  fn escape_attribute(&self) -> Cow<str> {
+      encode_unquoted_attribute(self)
+  }
+}
+
+impl<T : EscapeAttribute> EscapeAttribute for Option<T> {
+  fn escape_attribute(&self) -> Cow<str> {
+      match self {
+          Some(value) => value.escape_attribute(),
+          None => Cow::Owned("".to_string()),
+      }
+  }
 }
 
 impl EscapeAttribute for &String {
