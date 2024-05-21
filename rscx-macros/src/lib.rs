@@ -75,7 +75,7 @@ fn process_nodes<'n>(
             #(#errors;)*
             // Make sure that "enum x{};" and "let _x = crate::element;"  can be used in this context
             #(#docs;)*
-            format!(#html_string, #(rscx::FormatWrapper::new(#values)),*)
+            format!(#html_string, #(rscx::FormatWrapper::new(#[allow(unused_braces)] #values)),*)
         }
     }
 }
