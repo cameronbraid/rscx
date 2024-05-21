@@ -82,3 +82,39 @@ where
         self.map(f).map(|b| b.to_string()).collect::<Vec<_>>().join("")
     }
 }
+
+#[async_trait]
+pub trait MapFragmentAsyncExt<V> {
+  async fn map_fragment<F, B, C>(self, mut f: F) -> String
+  where
+      Self: Sized,
+      F: FnMut(V) -> C + std::marker::Send,
+      C: Future<Output = B> + std::marker::Send,
+      B: ToString,
+      V: std::marker::Send
+  ;
+}
+
+
+#[async_trait]
+impl<V> MapFragmentAsyncExt<V> for Vec<V>
+{
+  async fn map_fragment<F, B, C>(self, mut f: F) -> String
+  where
+      Self: Sized,
+      F: FnMut(V) -> C + std::marker::Send,
+      C: Future<Output = B> + std::marker::Send,
+      B: ToString,
+      V: std::marker::Send
+  {
+    use futures::stream::StreamExt;
+
+    let mut out  = Vec::with_capacity(self.len());
+    let mut stream = futures::stream::iter(self);
+    while let Some(v) = stream.next().await {
+      let b = f(v).await;
+      out.push(b.to_string());
+    }
+    out.into_iter().collect::<Vec<_>>().join("")
+  }
+}
