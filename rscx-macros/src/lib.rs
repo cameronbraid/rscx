@@ -433,7 +433,7 @@ impl ToTokens for ComponentFn {
                     syn::Ident::new(&format!("{}Props", name), proc_macro2::Span::call_site());
                 (
                     quote! {
-                        #[props]
+                        #[rscx::props]
                         pub struct #props_name{}
                     },
                     quote! { _props: #props_name },
