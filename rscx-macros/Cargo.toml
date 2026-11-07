@@ -21,3 +21,7 @@ proc-macro2-diagnostics = "0.10.1"
 quote = "1.0.33"
 rstml = "0.11.2"
 syn = { version = "2.0.29", features = ["full"] }
+
+[lints.rust]
+# Makepad Relax compiles this crate with cfg(relax)
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(relax)"] }

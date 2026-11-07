@@ -498,25 +498,31 @@ impl ToTokens for ComponentFn {
             syn::ReturnType::Type(_, ty) => quote! { #ty },
         };
 
-        // Under Makepad Relax (which sets `cfg(relax)`), a component is a plain fn returning a
-        // boxed future. An edit to its body is then an ordinary in-place patch: callers keep
-        // calling the same fn and every new call runs the new code. An `async fn` instead gets
-        // a new future type per edit, which callers in other files embed by value, so they kept
+        // Makepad Relax compiles proc macros with `cfg(relax)` set, so this choice is made at
+        // expansion and only one fn is emitted: two cfg'd fns of the same name pair up wrongly
+        // when Relax re-expands an edited file. Under Relax a component is a plain fn returning
+        // a boxed future, so an edit to its body is an ordinary in-place patch: callers keep
+        // calling the same fn and every new call runs the new code. An `async fn` gets a new
+        // future type per edit, which callers in other files embed by value, so they kept
         // building the old one. Native builds keep the unboxed `async fn`.
-        tokens.extend(quote! {
-            #defs
-            #[cfg(not(relax))]
-            #[allow(non_snake_case)]
-            #vis async fn #name(#args) #output {
-                #body
-            }
-            #[cfg(relax)]
-            #[allow(non_snake_case)]
-            #vis fn #name(#args) -> ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = #output_ty> + ::std::marker::Send>> {
-                ::std::boxed::Box::pin(async move {
+        if cfg!(relax) {
+            tokens.extend(quote! {
+                #defs
+                #[allow(non_snake_case)]
+                #vis fn #name(#args) -> ::std::pin::Pin<::std::boxed::Box<dyn ::std::future::Future<Output = #output_ty> + ::std::marker::Send>> {
+                    ::std::boxed::Box::pin(async move {
+                        #body
+                    })
+                }
+            });
+        } else {
+            tokens.extend(quote! {
+                #defs
+                #[allow(non_snake_case)]
+                #vis async fn #name(#args) #output {
                     #body
-                })
-            }
-        });
+                }
+            });
+        }
     }
 }
